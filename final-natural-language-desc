@@ -1,0 +1,67 @@
+Design a structural Verilog implementation of a 4-bit carry-select adder named CSA4. The adder takes two 4-bit inputs a[3:0] and b[3:0] and outputs a 4-bit sum[3:0] and a 1-bit cout. There is no external carry-in; the least significant block assumes cin = 0.
+
+Implement the design using the following hierarchy and modules:
+
+A 1-bit full adder module (FA) with inputs a, b, cin and outputs sum, cout.
+Implement logic as:
+
+w0 = a XOR b
+
+sum = w0 XOR cin
+
+cout = (w0 AND cin) OR (a AND b)
+
+A 2-bit ripple carry adder (RCA2) with inputs a[1:0], b[1:0], cin and outputs sum[1:0], cout.
+Implement it using two chained FAs:
+
+First FA: a[0], b[0], cin → sum[0], internal carry c1
+
+Second FA: a[1], b[1], c1 → sum[1], cout
+
+A 1-bit 2:1 multiplexer (MUX2to1_w1) with inputs i0, i1, s and output y, implemented using basic gates:
+
+sn = NOT s
+
+y = (i0 AND sn) OR (i1 AND s)
+
+A 2-bit 2:1 multiplexer (MUX2to1_w2) with inputs i0[1:0], i1[1:0], s and output y[1:0], implemented by applying the same logic bitwise.
+
+Now implement the top module CSA4 as follows:
+
+Split the 4-bit inputs into two 2-bit blocks:
+
+Lower block: bits [1:0]
+
+Upper block: bits [3:2]
+
+For the lower 2-bit block:
+
+Instantiate two RCA2 adders:
+
+One with cin = 0 → outputs sum0[1:0] and cout0_0
+
+One with cin = 1 → outputs sum1[1:0] and cout0_1
+
+Feed these into multiplexers, but hard-wire the select signal to 0:
+
+sum[1:0] is selected between sum0[1:0] and sum1[1:0] using a MUX2to1_w2 with s = 0
+
+The intermediate carry c1 is selected between cout0_0 and cout0_1 using a MUX2to1_w1 with s = 0
+
+Functionally, this block computes a[1:0] + b[1:0] + 0, but is wrapped in a carry-select-like structure.
+
+For the upper 2-bit block:
+
+Instantiate two RCA2 adders:
+
+One with cin = 0 → outputs sum0[3:2] and cout1_0
+
+One with cin = 1 → outputs sum1[3:2] and cout1_1
+
+Use the carry from the lower block (c1) as the select signal:
+
+sum[3:2] is selected using MUX2to1_w2 between sum0[3:2] and sum1[3:2]
+
+cout is selected using MUX2to1_w1 between cout1_0 and cout1_1
+
+This creates a hybrid adder: ripple inside each 2-bit block and carry-select between blocks. The lower block’s select lines are tied to zero, making it functionally a ripple adder with redundant precomputation. The upper block performs true carry select using the carry from the lower block.
